@@ -3,22 +3,31 @@
 %% Enter your paper number here for the review copy
 % \bmvcreviewcopy{??}
 
-\title{Bringing Real Objects into the Digital World Through Observation}
+%\title{Bringing Real Objects into the Digital World Through Observation}
+\title{Reproducing the Workspace by Observing the Surroundings}
 
 % Enter the paper's authors in order
 % \addauthor{Name}{email/homepage}{INSTITUTION_CODE}
 \addauthor{Malte Herrmann}{malte.herrmann@ovgu.de}{1}
-\addauthor{Ayoub Al-Hamadi}{http://www.vision.inst.ac.uk/~pp}{1}
+\addauthor{Ayoub Al-Hamadi}{}{1}
 
 % Enter the institutions
 % \addinstitution{Name\\Address}
+% \addinstitution{
+%     Neuro-Information Technology Group,\\
+%     Otto-von-Guericke-University, \\
+%     Magdeburg, Germany
+% }
+
 \addinstitution{
-    Neuro-Information Technology Group,\\
-    Otto-von-Guericke-University, \\
-    Magdeburg, Germany,
+Otto von Guericke University Magdeburg,\\
+Neuro-Information Technology Group,\\
+Universitätsplatz 2,\\
+39106 Magdeburg
 }
 
-\runninghead{Student, Prof, Collaborator}{BMVC Author Guidelines}
+%\runninghead{Herrmann, Al-Hamadi}{From Observation to Digital Objects}
+\runninghead{Herrmann, Al-Hamadi}{Reproducing Workspace by Observing}
 
 % Any macro definitions you would like to include
 % These are not defined in the style file, because they don't begin
@@ -48,23 +57,89 @@ written many papers before.  As well as a description of the format, the
 document contains many instructions relating to formatting problems and
 errors that are common even in the work of authors who {\em have}
 written many papers before.
+
 \end{abstract}
 
 %-------------------------------------------------------------------------
 \section{Introduction}
 \label{sec:intro}
-The proceedings of BMVC are published only in electronic form, but it is still assumed
-that readers of the papers may wish to print the paper.   This document
-illustrates the required paper format, which is designed to read well either printed
-with two pages per sheet (``2-up''), or on screen.  Note that printing with one page
-per sheet will produce a ``large print'' version, which in many cases is not what is desired.
-To approximate the old BMVC format, print at one page per sheet, but do not choose
-the option to ``scale to fit paper''.
+Digital relatives, such as twins (DT)~\cite{ https://doi.org/10.3390/asi4020036} and cousins (DC)~\cite{dai2024automated}, have become more popular in recent years. This is mostly due to their ability to adapt quickly to changing environments, prevent damage and consume less energy. Another advantage is that the movement of the real robot can be planned remotely in advance. This allows possible collisions with other robots or the environment to be avoided. This works quite well in cases of static surroundings, but when it comes to dynamic changes, such as the position and orientation of tools or products, the digital space needs to adapt. This paper presents an environment for a production cell that creates a representation of the current workspace by scanning it with an RGB-D camera only. The generated clones can then be manipulated. These changes are then fed back to the real robot control to perform the planned movement action. This functionality builds on the digital twin environment provided in~\cite{herrmann2025realtime}.
 
-\LaTeX\ users should use this template in order to prepare their paper.
-Users of other packages should emulate the style and layout of this
-example.  Note that best results will be achieved using {\tt pdflatex},
-which is available in most modern distributions.
+In addition to remotely controlling the DT, this functionality enables circumstances and tasks in the real world to be set up and transferred into the digital realm, where reinforcement learning can be applied to the simulation. This helps to reduce the gap between simulation and reality.
+
+
+The accuracy of the placement of the creates objects is validated in an experiment. XX
+
+
+\section{Related Works}
+\label{sec:SOTA}
+XX
+\newpage
+\section{Method}
+\label{sec:method}
+The digital production cell should be as best as possible recreated to reduce the sim to real gap. A comparison of both types of production cells is given in figure \ref{fig:production_cell}.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.49\linewidth]{media/Production_cell.png} %left
+    \includegraphics[width=0.49\linewidth]{media/Production_cell.png} %right
+    \caption{Both production cells. \textit{left}: real world, \textit{right}: digital world.}
+    \label{fig:production_cell}
+\end{figure}
+
+In addition to remotely controlling the DT, this functionality enables the complete Digital Twin system to be divided into four parts. As shown in Figure~\ref{fig:schematic}, collected data from the real-world robots is interpreted by AI nodes. This information is then interpreted by the Digital Twin software and implemented in the environment. After modifications, algorithms are used to apply the changes to the real-world environment.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]{media/Schematik_DT_3.pdf}
+    \caption{XXSchematic diagram. Camera data is analysed using AI nodes and fed into the simulation. Changes made there are analysed and replicated in the real-world system.}
+    \label{fig:schematic}
+\end{figure}
+
+\subsection{Real-world setup}
+The real-world setup describes the hardware modalities as well as the objects contained in the workspace.
+
+\subsubsection{Robots}
+The real production cell consists of two kinematic chain robots from \textit{Universal Robots} located in a line on the table. The smaller UR5e robot on the left is mounted on a linear axis that is not in use. It has an RG6 gripper by \textit{OnRobot} installed at the tool flange. An \textit{Intel} \textit{RealSense} D435i RGB-D camera is mounted on top of the gripper. On the right-hand side of the table is an UR10e robot. This robot is equipped with a 2FR14 gripper by \textit{Robotiq} and also a \textit{RealSense} camera.
+
+Both robots run an individually adapted version of the UR\_ROS2\_driverXX software to ensure execution on a single PC without topics with the same name being mixed. These namespaces are essential for distinguishing the robots in the simulation and enabling inter-robot communication.
+
+\subsubsection{Workspace}
+The robots' work area covers the entire table. The left, respective the right-hand side belongs only to the dedicated robot. In the middle a shared workspace is defined, enabling object passing.
+physical markings can be placed in the holes of the table to indicate defined positions. Due to their defined size, these markings can also be transferred to the simulation for validation purposes.
+
+As objects, black and white cubes are used. The 3D-printed cubes have a length of $5\,\mathrm{cm}$ in each dimension and a different letter on each side. This helps to distinguish the recognized cubes in the simulation. 
+
+\subsection{Digital world}
+In the digital world, all the components of the functional digital twin come together. Cameras mounted on the real robot gather images, which are interpreted by AI nodes. This information is then used to recreate the workspace in the simulation. The simulation is implemented in \textit{Unity} and connected to the ROS2 domain via a TCP endpoint. \textit{Unity}, as a gaming engine, offers the possibility to manipulate and interact with objects in multiple ways. Currently, interaction is only possible via the PC mouse. Later, integrating Virtual Reality or interacting with the pose estimation model will be possible with ease. Once the user has acknowledged the changes, the state is sent via ROS2 to the path planning nodes, which send commands to the real robot controller to accomplish the task. More detail is provided in the following subsections.
+
+\subsubsection{AI-Perception}
+The RGB and depth images transferred via the ROS2 network are fed into multiple AI nodes. For object/cube detection, a simple YOLO[XX] network is used that has been finetuned with data from the black and white cubes used for the task. The output provides information about the position and orientation in the image, and the type of object, respectively, the topside letter. The pose estimation node uses mmpose [XXgenaues Modell erwähnen\url{https://mmpose.readthedocs.io/en/latest/model\_zoo\_papers/algorithms.html}]  to estimate the skeletal posture (COCO 17-Point Keypoint Names [XX]) of people standing in front of the camera.
+
+%Beside the perception nodes, decision nodes are determine, what object or which person gets the focus of the robot. XXIn real production cells this is relevant to communicate to the worker[IMHERE-PaperXX].   detectThose nodes function as object or face detection and pose estimation. This information, consisting of skeletal posture and oriented bounding boxes, is then interpreted by the Digital Twin software and implemented in the environment. The user can then manipulate objects inside the simulation. After the planned movement has been acknowledged, algorithms detect changes in the environment and start trajectory planning, which is then applied to the real and digital robots performing the action simultaneously.
+\subsubsection{Digital Twin}
+
+\subsubsection{Task execution planning}
+
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.3\linewidth]{media/Workspace 1_017.png}
+    \includegraphics[width=0.3\linewidth]{media/Workspace 1_018.png}
+    \includegraphics[width=0.3\linewidth]{media/Workspace 1_019.png}
+    \caption{Manipulation eines erzeugten Würfels zu vorgegebener Zielposition in der Simulation}
+    \label{fig:cubemovement}
+\end{figure}
+\section{Experiment}
+\label{sec:experiment}
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+
+\section{Future Work}
+\label{sec:future}
+
 
 \subsection{Paper length}
 Papers must not exceed 14 pages (excluding references). References and any appendices are unlimited.
