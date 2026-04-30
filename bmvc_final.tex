@@ -113,12 +113,27 @@ As objects, black and white cubes are used. The 3D-printed cubes have a length o
 In the digital world, all the components of the functional digital twin come together. Cameras mounted on the real robot gather images, which are interpreted by AI nodes. This information is then used to recreate the workspace in the simulation. The simulation is implemented in \textit{Unity} and connected to the ROS2 domain via a TCP endpoint. \textit{Unity}, as a gaming engine, offers the possibility to manipulate and interact with objects in multiple ways. Currently, interaction is only possible via the PC mouse. Later, integrating Virtual Reality or interacting with the pose estimation model will be possible with ease. Once the user has acknowledged the changes, the state is sent via ROS2 to the path planning nodes, which send commands to the real robot controller to accomplish the task. More detail is provided in the following subsections.
 
 \subsubsection{AI-Perception}
-The RGB and depth images transferred via the ROS2 network are fed into multiple AI nodes. For object/cube detection, a simple YOLO[XX] network is used that has been finetuned with data from the black and white cubes used for the task. The output provides information about the position and orientation in the image, and the type of object, respectively, the topside letter. The pose estimation node uses mmpose [XXgenaues Modell erwähnen\url{https://mmpose.readthedocs.io/en/latest/model\_zoo\_papers/algorithms.html}]  to estimate the skeletal posture (COCO 17-Point Keypoint Names [XX]) of people standing in front of the camera.
+The RGB and depth images transferred via the ROS2 network are fed into multiple AI nodes. For object/cube detection, a simple YOLO[XX] network is used that has been finetuned with data from the black and white cubes used for the task. The output provides information about the position and orientation in the image, and the type of object, respectively, the topside letter. To determine the distance to the camera, the depth image is taken into account. The depth value is piked at the intersection point of the diagonals of the bounding boxes.
+
+The pose estimation node uses mmpose [XXgenaues Modell erwähnen\url{https://mmpose.readthedocs.io/en/latest/model\_zoo\_papers/algorithms.html}]  to estimate the skeletal posture (COCO 17-Point Keypoint Names [XX]) of people standing in front of the camera. The distance of each point is, as well, taken from the depth image. This makes it possible to display the person's model correctly in front of the robot.
 
 %Beside the perception nodes, decision nodes are determine, what object or which person gets the focus of the robot. XXIn real production cells this is relevant to communicate to the worker[IMHERE-PaperXX].   detectThose nodes function as object or face detection and pose estimation. This information, consisting of skeletal posture and oriented bounding boxes, is then interpreted by the Digital Twin software and implemented in the environment. The user can then manipulate objects inside the simulation. After the planned movement has been acknowledged, algorithms detect changes in the environment and start trajectory planning, which is then applied to the real and digital robots performing the action simultaneously.
 \subsubsection{Digital Twin}
+\textit{Unity} was chosen for the implementation of the digital twin, because of the variety of opportunities. The dynamic and presentable visualization of models and object, in combination with an included physics engine makes it the optimal tool. The table has been rebuild by scale. 1 unit in \textit{Unity} corresponds to $1\,\mathrm{m}$ in the real world. The robot and gripper models have been imported with the help of an URDF-Importer~\footnote{\url{https://github.com/Unity-Technologies/URDF-Importer}}, provided by \textit{Unity} itself. With the TCP endpoint, the joint states topic from the real robot is subscribed and applied to the models joints. This mirrors the actual movement in real-time.
+
+To create the objects, a helper ROS2 node is used. It subscribes to the bounding boxes of the cube detection and sends a command to \textit{Unity} to spawn a distinct cube. The node also keeps track of already detected cubes, to prevent multiple spawns of the same cube.
+
+The spawn root point is defined at the position of the robot model, where the camera is usually located. Since the AI nodes output data relative to the camera frame, no further calculations except translating pixel coordinates to world coordinates need to be performed.
+
+Once spawned, cubes can be moved around the workspace with the PC mouse and stacked on top of each other. For visualization, a ghost version of the cube appears in the simulation (see Fig~\ref{XX}).
+
+The user interface provides an acknowledgement button for the changes. Clicking the button sends a ROS2 message to the execution planning node, which is described in subsection~\ref{subsec:execution}. As the simulation is still subscribed to the joint states topic, both the execution of the real robot task and the movement of the virtual cube are displayed, taking into account the physics engine.
+
 
 \subsubsection{Task execution planning}
+\label{subsec:execution}
+Task execution planning is also a helper node. The message sent from \textit{Unity} contains the cube's current position and the designated new position in the workspace. When stacking cubes, the motions are sorted by z-value to ensure that the cubes are not placed in mid-air.
+The start and destination positions are sent to the running \textit{moveIt}~\footnote{\url{https://moveit.ai/}} node, where a trajectory is calculated. The gripper is decoupled from \textit{moveIt} and controlled via a distinct gripper controller. This is done for every displaced cube in the simulation.
 
 
 \begin{figure}[h]
@@ -131,6 +146,13 @@ The RGB and depth images transferred via the ROS2 network are fed into multiple 
 \end{figure}
 \section{Experiment}
 \label{sec:experiment}
+This experiment demonstrates the accuracy with which the cubes are detected and placed, as well as the precision with which they are moved in the real world, by shifting them in the simulation.
+
+\subsection{Setup}
+
+\subsection{Procedure}
+
+\subsection{Evaluation}
 
 
 \section{Conclusion}
@@ -140,7 +162,7 @@ The RGB and depth images transferred via the ROS2 network are fed into multiple 
 \section{Future Work}
 \label{sec:future}
 
-
+\newpage
 \subsection{Paper length}
 Papers must not exceed 14 pages (excluding references). References and any appendices are unlimited.
 {\bf Only}  the acknowledgement and bibliography should be {\em excluded} from the page count: Papers must not have altered margins and formatting from those laid down by this style guide.
@@ -150,22 +172,22 @@ be of any length, within reason.  It must {\em not} include
 annotations, figures, or any other paraphernalia intended to subvert the
 paper length requirement.
 
-\begin{figure}
-\begin{tabular}{ccc}
-\bmvaHangBox{\fbox{\parbox{2.7cm}{~\\[2.8mm]
-\rule{0pt}{1ex}\hspace{2.24mm}\includegraphics[width=2.33cm]{images/eg1_largeprint.png}\\[-0.1pt]}}}&
-\bmvaHangBox{\fbox{\includegraphics[width=2.8cm]{images/eg1_largeprint.png}}}&
-\bmvaHangBox{\fbox{\includegraphics[width=5.6cm]{images/eg1_2up.png}}}\\
-(a)&(b)&(c)
-\end{tabular}
-\caption{It is often a good idea for the first figure to attempt to
-encapsulate the article, complementing the abstract.  This figure illustrates
-the various print and on-screen layouts for which this paper format has
-been optimised: (a) traditional BMVC print format; (b) on-screen
-single-column format, or large-print paper; (c) full-screen two column, or
-2-up printing. }
-\label{fig:teaser}
-\end{figure}
+% \begin{figure}
+% \begin{tabular}{ccc}
+% \bmvaHangBox{\fbox{\parbox{2.7cm}{~\\[2.8mm]
+% \rule{0pt}{1ex}\hspace{2.24mm}\includegraphics[width=2.33cm]{images/eg1_largeprint.png}\\[-0.1pt]}}}&
+% \bmvaHangBox{\fbox{\includegraphics[width=2.8cm]{images/eg1_largeprint.png}}}&
+% \bmvaHangBox{\fbox{\includegraphics[width=5.6cm]{images/eg1_2up.png}}}\\
+% (a)&(b)&(c)
+% \end{tabular}
+% \caption{It is often a good idea for the first figure to attempt to
+% encapsulate the article, complementing the abstract.  This figure illustrates
+% the various print and on-screen layouts for which this paper format has
+% been optimised: (a) traditional BMVC print format; (b) on-screen
+% single-column format, or large-print paper; (c) full-screen two column, or
+% 2-up printing. }
+% \label{fig:teaser}
+% \end{figure}
 
 \subsection{Citations}
 When citing a multi-author paper, you may save space by using ``{\em et
