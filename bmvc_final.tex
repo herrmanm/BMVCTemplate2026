@@ -86,42 +86,54 @@ The digital production cell should be as best as possible recreated to reduce th
     \label{fig:production_cell}
 \end{figure}
 
-In addition to remotely controlling the DT, this functionality enables the complete Digital Twin system to be divided into four parts. As shown in Figure~\ref{fig:schematic}, collected data from the real-world robots is interpreted by AI nodes. This information is then interpreted by the Digital Twin software and implemented in the environment. After modifications, algorithms are used to apply the changes to the real-world environment.
+There are three different modes of the digital twin. First, it can act as a digital shadow that only displays the current robot configuration and AI node states. Second, the DT operates as a movement planning tool. When objects are moved, commands are sent to the real robot system to recreate these changes. Finally, the DT can be used for simulation and reinforcement learning purposes without real hardware.
+
+The whole system, including real robot and DT can be divided in four parts, which are explained in this section. As shown in Figure~\ref{fig:schematic}, collected data from the real-world robots (~\ref{rw:robots}) is interpreted by AI nodes (~\ref{dw:perception}). This information is then interpreted by the Digital Twin software (~\ref{dw:DT}) and implemented in the environment. After modifications, algorithms are used to apply the changes to the real-world environment (~\ref{dw:algo}).
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=\linewidth]{media/sc.pdf}
+    \includegraphics[width=\linewidth]{media/scematic_production_cell.pdf}
     \caption{XXSchematic diagram. Camera data is analysed using AI nodes and fed into the simulation. Changes made there are analysed and replicated in the real-world system.}
     \label{fig:schematic}
 \end{figure}
 
 \subsection{Real-world setup}
+\label{rwsetup}
 The real-world setup describes the hardware modalities as well as the objects contained in the workspace.
 
 \subsubsection{Robots}
+\label{rw:robots}
 The real production cell consists of two kinematic chain robots from \textit{Universal Robots} located in a line on the table. The smaller UR5e robot on the left is mounted on a linear axis that is not in use. It has an RG6 gripper by \textit{OnRobot} installed at the tool flange. An \textit{Intel} \textit{RealSense} D435i RGB-D camera is mounted on top of the gripper. On the right-hand side of the table is an UR10e robot. This robot is equipped with a 2FR14 gripper by \textit{Robotiq} and also a \textit{RealSense} camera.
 
 Both robots run an individually adapted version of the UR\_ROS2\_driverXX software to ensure execution on a single PC without topics with the same name being mixed. These namespaces are essential for distinguishing the robots in the simulation and enabling inter-robot communication.
 
 \subsubsection{Workspace}
+\label{rw:workspace}
 The robots' work area covers the entire table. The left, respective the right-hand side belongs only to the dedicated robot. In the middle a shared workspace is defined, enabling object passing.
 physical markings can be placed in the holes of the table to indicate defined positions. Due to their defined size, these markings can also be transferred to the simulation for validation purposes.
 
 As objects, black and white cubes are used. The 3D-printed cubes have a length of $5\,\mathrm{cm}$ in each dimension and a different letter on each side. This helps to distinguish the recognized cubes in the simulation. 
 
-\subsection{Digital world}
+\subsection{Digital-world setup}
+\label{dw:setup}
 In the digital world, all the components of the functional digital twin come together. Cameras mounted on the real robot gather images, which are interpreted by AI nodes. This information is then used to recreate the workspace in the simulation. The simulation is implemented in \textit{Unity} and connected to the ROS2 domain via a TCP endpoint. \textit{Unity}, as a gaming engine, offers the possibility to manipulate and interact with objects in multiple ways. Currently, interaction is only possible via the PC mouse. Later, integrating Virtual Reality or interacting with the pose estimation model will be possible with ease. Once the user has acknowledged the changes, the state is sent via ROS2 to the path planning nodes, which send commands to the real robot controller to accomplish the task. More detail is provided in the following subsections.
 
 \subsubsection{AI-Perception}
+\label{dw:perception}
+XX: kann auf roboter system oder DT PC laufen
 The RGB and depth images transferred via the ROS2 network are fed into multiple AI nodes. For object/cube detection, a simple YOLO[XX] network is used that has been finetuned with data from the black and white cubes used for the task. The output provides information about the position and orientation in the image, and the type of object, respectively, the topside letter. To determine the distance to the camera, the depth image is taken into account. The depth value is piked at the intersection point of the diagonals of the bounding boxes.
+
+XXHelpernode
+For the cube spawning, a ROS2 helper node was developed. It subscribes to the bounding boxes topic and translates this information to be interpretable by Unity. The cube spawn point is calculated with respect of the camera position with help of the intrinsic camera parameter. Because \textit{Untiy} implicit has transformation matrices for the kinematic joints of the robot, the extrinsic camera parameter are only used for the placement of the camera. Because the depth images only provide the distance to the topside and the origin of the cube is in the middle, a small offset of $2.5\,\mathrm{cm}$ need to be taken into account.
 
 The pose estimation node uses mmpose [XXgenaues Modell erwähnen\url{https://mmpose.readthedocs.io/en/latest/model\_zoo\_papers/algorithms.html}]  to estimate the skeletal posture (COCO 17-Point Keypoint Names [XX]) of people standing in front of the camera. The distance of each point is, as well, taken from the depth image. This makes it possible to display the person's model correctly in front of the robot.
 
 %Beside the perception nodes, decision nodes are determine, what object or which person gets the focus of the robot. XXIn real production cells this is relevant to communicate to the worker[IMHERE-PaperXX].   detectThose nodes function as object or face detection and pose estimation. This information, consisting of skeletal posture and oriented bounding boxes, is then interpreted by the Digital Twin software and implemented in the environment. The user can then manipulate objects inside the simulation. After the planned movement has been acknowledged, algorithms detect changes in the environment and start trajectory planning, which is then applied to the real and digital robots performing the action simultaneously.
 \subsubsection{Digital Twin}
-\textit{Unity} was chosen for the implementation of the digital twin, because of the variety of opportunities. The dynamic and presentable visualization of models and object, in combination with an included physics engine makes it the optimal tool. The table has been rebuild by scale. 1 unit in \textit{Unity} corresponds to $1\,\mathrm{m}$ in the real world. The robot and gripper models have been imported with the help of an URDF-Importer~\footnote{\url{https://github.com/Unity-Technologies/URDF-Importer}}, provided by \textit{Unity} itself. With the TCP endpoint, the joint states topic from the real robot is subscribed and applied to the models joints. This mirrors the actual movement in real-time.
+\label{dw:DT}
+\textit{Unity} was chosen for the implementation of the digital twin, because of the variety of opportunities. The dynamic and presentable visualization of models and objects, in combination with an included physics engine makes it the optimal tool~\cite{singh_unity_2024}. The table has been rebuild by scale. 1 unit in \textit{Unity} corresponds to $1\,\mathrm{m}$ in the real world. The robot and gripper models have been imported with the help of an URDF-Importer~\footnote{\url{https://github.com/Unity-Technologies/URDF-Importer}}, provided by \textit{Unity} itself. With the TCP endpoint, the joint states topic from the real robot is subscribed and applied to the models joints. This mirrors the actual movement in real-time.
 
-To create the objects, a helper ROS2 node is used. It subscribes to the bounding boxes of the cube detection and sends a command to \textit{Unity} to spawn a distinct cube. The node also keeps track of already detected cubes, to prevent multiple spawns of the same cube.
+To create the objects, a helper ROS2 node is used. It subscribes to the estimated bounding boxes of the cube detection and sends a command to \textit{Unity} to spawn a distinct cube. The node also keeps track of already detected cubes, to prevent multiple spawns of the same cube.
 
 The spawn root point is defined at the position of the robot model, where the camera is usually located. Since the AI nodes output data relative to the camera frame, no further calculations except translating pixel coordinates to world coordinates need to be performed.
 
@@ -131,10 +143,10 @@ The user interface provides an acknowledgement button for the changes. Clicking 
 
 
 \subsubsection{Task execution planning}
+\label{dw:algo}
 \label{subsec:execution}
-Task execution planning is also a helper node. The message sent from \textit{Unity} contains the cube's current position and the designated new position in the workspace. When stacking cubes, the motions are sorted by z-value to ensure that the cubes are not placed in mid-air.
-The start and destination positions are sent to the running \textit{moveIt}~\footnote{\url{https://moveit.ai/}} node, where a trajectory is calculated. The gripper is decoupled from \textit{moveIt} and controlled via a distinct gripper controller. This is done for every displaced cube in the simulation.
-
+Task execution planning is also a helper node. The message sent from \textit{Unity} contains the cube's current position and the designated new position in the workspace. When stacking cubes, the motions are sorted by z-value to ensure that the cubes are not placed in mid-air, while stacking them.
+The start and destination positions are sent to the running \textit{moveIt}~\footnote{\url{https://moveit.ai/}} node, where a trajectory is calculated. Since the gripper is also included in URDF and SRDF files, it is also calculated via \textit{moveIt}, sending commands to a distinct gripper controller. This is done for every displaced cube in the simulation.
 
 \begin{figure}[h]
     \centering
@@ -146,14 +158,47 @@ The start and destination positions are sent to the running \textit{moveIt}~\foo
 \end{figure}
 \section{Experiment}
 \label{sec:experiment}
-This experiment demonstrates the accuracy with which the cubes are detected and placed, as well as the precision with which they are moved in the real world, by shifting them in the simulation.
+Two experiments were conducted during development. The first demonstrates the accuracy with which the cubes are detected and placed in the simulation workspace. Based on this, the cubes are moved, and the path planning algorithm aligns the placement in the second experiment.
 
-\subsection{Setup}
+\subsection{Cube placement}
+\label{ex:placement}
+This experiment shows the precision of the cube detection for recreating the current workspace.
 
-\subsection{Procedure}
+\subsubsection{Setup}
+The table represents the workspace and has holes drilled at $2.5\,\mathrm{cm}$ intervals. These holes serve as a metric to determine placement. In the simulation, the texture of the table has been edited to have markings on the surface, that correspond to the holes in the table. They have a distance of $2.5\,\mathrm{cm}$ on the XZ-plane. Two 3D-printed templates, each with an edge length of $5\,\mathrm{cm}$, are used to fixate the cubes. They are shown in Fig.~\ref{fig:cubeholder}. These templates define the cubes to the surface, and at a height of $5\,\mathrm{cm}$. These templates fit in the holes of the table and are also located in the digital twin environment.
 
-\subsection{Evaluation}
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.49\linewidth]{media/cube_templates.png}
+    \caption{Cube holder templates}
+    \label{fig:cubeholder}
+\end{figure}
 
+For the experiment, cubes are now placed inside these templates in the real world. The color and the top side letter is determined by random.
+
+
+XX Bild vom Workspace
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.49\linewidth]{media/GridWithTemplates.png}
+    \caption{Both workspaces before the the experiment. \textit{left}: real, \textit{right}: simulation}
+    \label{fig:cubeholder}
+\end{figure}
+
+\subsubsection{Procedure}
+To reproduce the current real workspace, it is scanned with the RGB-D camera mounted on the robot. A trajectory, to move the tool center point orthogonal to the tables surface, is planned. It starts at the right-most side and moves at a constant speed to the left-most side. During the movement, the cube detection node estimates the pixel coordinates of the bounding box. With this information, the cube spawner nodes calculates the world coordinates, by using the intrinsic camera parameter and the depth values. This pose info is then sent to and interpret by \textit{Unity}, where the cubes are spawned with the correct top side letter. 
+
+\subsubsection{Evaluation}
+XX: Kameraparamter rechen Pixelkoordinaten in Weltkoordinaten um
+
+\subsection{Cube movement}
+The second experiment shows, that it is possible to plan a movement of the digital twin, that is then executed in the real world.
+\subsubsection{Setup}
+The scanned workspace from the previous experiment can be used as a basis and the end position of the robot will be used as the now start position. Cubes are now moved around the workspace and places anywhere inside. The movement is done by the drag-and-drop function with the PC-mouse. To indicate the new position, a ghost model of the cube is displayed. When the dislocation has been done, this ghost model can be used to show the placement.
+
+\subsubsection{Procedure}
+In \textit{Unity}, an arbitrary number of cubes are selected and moved in the XZ-plane. To show the precision of the placement, a pyramid of 4 cubes in hight is stacked.
+\subsubsection{Evaluation}
 
 \section{Conclusion}
 \label{sec:conclusion}
@@ -161,6 +206,9 @@ This experiment demonstrates the accuracy with which the cubes are detected and 
 
 \section{Future Work}
 \label{sec:future}
+
+XX: Cubedetection: Neues mdoell mit rotation
+XX: dynamische Erstellung von anderen Objekten in der Simulation
 
 \newpage
 \subsection{Paper length}
